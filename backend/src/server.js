@@ -3,7 +3,6 @@ import dotenv from 'dotenv';
 import { sql, testDBConnection } from './config/db.js';
 import authRoutes from './routes/authRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
-import { authMiddleware } from './middleware/authMiddleware.js';
 import inviteRoutes from './api/auth/invite.js';
 import registerRoutes from './api/auth/register.js';
 import loginRoutes from './api/auth/login.js';
@@ -15,13 +14,6 @@ const app = express();
 const PORT = process.env.PORT || 5001;
 
 app.use(express.json());
-
-app.get('/api/me', authMiddleware, (req, res) => {
-  res.json({
-    message: 'Du är inloggad',
-    user: req.user,
-  });
-});
 
 app.get('/api/me', auth, async (req, res) => {
   res.status(200).json({
