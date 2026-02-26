@@ -5,6 +5,9 @@ import jwt from 'jsonwebtoken';
 
 const router = express.Router();
 
+if (!process.env.JWT_SECRET) throw new Error('JWT_SECRET saknas i env!');
+
+// POST /api/auth/login
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
 
@@ -24,7 +27,6 @@ router.post('/login', async (req, res) => {
     }
 
     const user = users[0];
-
     const validPassword = await bcrypt.compare(password, user.password_hash);
 
     if (!validPassword) {
@@ -37,7 +39,7 @@ router.post('/login', async (req, res) => {
         email: user.email,
       },
       process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRES_IN },
+      { expiresIn: process.env.JWT_EXPIRES_IN || '24h' },
     );
 
     res.status(200).json({
@@ -49,7 +51,7 @@ router.post('/login', async (req, res) => {
       },
     });
   } catch (error) {
-    console.error(error);
+    console.error('❌ Auth login error:', error);
     res.status(500).json({ error: 'Serverfel' });
   }
 });
@@ -69,42 +71,47 @@ router.post('/register', async (req, res) => {
   }
 
   try {
-    // 1. kolla invite
-    const invite = await sql`
-      SELECT * FROM invites
-      WHERE token = ${token} AND used = false
+    // Kolla invite-token: både used=false och ej expired!
+    const invites = await sql`
+      SELECT email
+      FROM invites
+      WHERE token = ${token} AND used = false AND expires_at > now()
     `;
 
-    if (invite.length === 0) {
+    if (invites.length === 0) {
       return res.status(400).json({ error: 'Ogiltig eller använd invite' });
     }
 
-    const email = invite[0].email;
-    const password_hash = await bcrypt.hash(password, 12);
+    const email = invites[0].email;
+    const passwordHash = await bcrypt.hash(password, 12);
 
-    // 2. skapa user
-    const user = await sql`
-      INSERT INTO users (email, username, password_hash)
-      VALUES (${email}, ${username}, ${password_hash})
-      RETURNING id, email, username
-    `;
+    // Atomic: skapa user + markera invite som used
+    try {
+      await sql.begin(async (sql) => {
+        await sql`
+          INSERT INTO users (email, username, password_hash)
+          VALUES (${email}, ${username}, ${passwordHash})
+        `;
 
-    // 3. markera invite som använd
-    await sql`
-      UPDATE invites
-      SET used = true
-      WHERE token = ${token}
-    `;
-
-    res.status(201).json({ user: user[0] });
-  } catch (error) {
-    if (error.message.includes('unique')) {
-      return res
-        .status(400)
-        .json({ error: 'Username eller email finns redan' });
+        await sql`
+          UPDATE invites
+          SET used = true
+          WHERE token = ${token}
+        `;
+      });
+    } catch (error) {
+      if (error.code === '23505') {
+        // Unique violation (användarnamn, email etc)
+        return res
+          .status(400)
+          .json({ error: 'Username eller email finns redan' });
+      }
+      throw error;
     }
 
-    console.error(error);
+    res.status(201).json({ message: 'Användare registrerad' });
+  } catch (error) {
+    console.error('❌ Auth register error:', error);
     res.status(500).json({ error: 'Registrering misslyckades' });
   }
 });
