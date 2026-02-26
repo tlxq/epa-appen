@@ -5,6 +5,8 @@ import { sql } from '../../config/db.js';
 
 const router = express.Router();
 
+if (!process.env.JWT_SECRET) throw new Error('JWT_SECRET saknas i env!');
+
 // POST /api/auth/login
 router.post('/', async (req, res) => {
   const { email, password } = req.body;
@@ -34,7 +36,7 @@ router.post('/', async (req, res) => {
     const token = jwt.sign(
       { userId: user.id, email: user.email },
       process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRES_IN },
+      { expiresIn: process.env.JWT_EXPIRES_IN || '24h' }, // default 24h
     );
 
     res.status(200).json({
@@ -42,7 +44,7 @@ router.post('/', async (req, res) => {
       user: { id: user.id, email: user.email, username: user.username },
     });
   } catch (error) {
-    console.error(error);
+    console.error('❌ Login error:', error);
     res.status(500).json({ error: 'Serverfel' });
   }
 });

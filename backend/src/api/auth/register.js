@@ -34,22 +34,32 @@ router.post('/', async (req, res) => {
     const passwordHash = await bcrypt.hash(password, 10);
 
     // Transaction: skapa user + markera invite som used
-    await sql.begin(async (sql) => {
-      await sql`
-        INSERT INTO users (email, username, password_hash)
-        VALUES (${email}, ${username}, ${passwordHash})
-      `;
+    try {
+      await sql.begin(async (sql) => {
+        await sql`
+          INSERT INTO users (email, username, password_hash)
+          VALUES (${email}, ${username}, ${passwordHash})
+        `;
 
-      await sql`
-        UPDATE invites
-        SET used = true
-        WHERE token = ${token}
-      `;
-    });
+        await sql`
+          UPDATE invites
+          SET used = true
+          WHERE token = ${token}
+        `;
+      });
+    } catch (error) {
+      if (error.code === '23505') {
+        // Hantera unikt email/användarnamn
+        return res
+          .status(400)
+          .json({ error: 'Email eller användarnamn redan upptaget' });
+      }
+      throw error;
+    }
 
     res.status(201).json({ message: 'Användare registrerad' });
   } catch (error) {
-    console.error(error);
+    console.error('❌ Register error:', error);
     res.status(500).json({ error: 'Registrering misslyckades' });
   }
 });

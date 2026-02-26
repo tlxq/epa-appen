@@ -20,12 +20,13 @@ router.post('/', adminAuth, async (req, res) => {
       VALUES (${email}, ${token}, ${expiresAt})
     `;
 
-    const inviteLink = `${process.env.FRONTEND_URL}/register?token=${token}`;
+    // Fixad invite-link för rätt frontend-route!
+    const inviteLink = `${process.env.FRONTEND_URL}/epadunk/invite-register?token=${token}`;
     await sendInviteEmail({ to: email, inviteLink });
 
     res.status(201).json({ message: 'Invite skickad', inviteLink });
   } catch (error) {
-    console.error(error);
+    console.error('❌ Invite error:', error);
     res.status(500).json({ error: 'Kunde inte skapa invite' });
   }
 });
