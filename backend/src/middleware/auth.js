@@ -1,5 +1,8 @@
 import jwt from 'jsonwebtoken';
 
+// > Lägg denna check högst upp (valfritt men rekommenderat)
+if (!process.env.JWT_SECRET) throw new Error('JWT_SECRET saknas i env!');
+
 export const auth = (req, res, next) => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -13,6 +16,7 @@ export const auth = (req, res, next) => {
     req.user = decoded; // { userId, email }
     next();
   } catch (err) {
+    console.error('❌ Auth middleware:', err.message);
     return res.status(401).json({ error: 'Invalid token' });
   }
 };

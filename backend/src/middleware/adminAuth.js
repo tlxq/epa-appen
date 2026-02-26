@@ -1,6 +1,8 @@
 import jwt from 'jsonwebtoken';
 import { sql } from '../config/db.js';
 
+if (!process.env.JWT_SECRET) throw new Error('JWT_SECRET saknas i env!');
+
 export const adminAuth = async (req, res, next) => {
   const authHeader = req.headers.authorization;
 
@@ -27,6 +29,7 @@ export const adminAuth = async (req, res, next) => {
 
     next();
   } catch (err) {
+    console.error('❌ AdminAuth middleware:', err.message);
     res.status(401).json({ error: 'Invalid token' });
   }
 };
