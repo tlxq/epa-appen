@@ -112,10 +112,4 @@ A modern React Native & Expo mobile app for the EPA project.
 
 ---
 
-## License
-
-MIT — see [LICENSE](../LICENSE) for details.
-
----
-
 Enjoy!
