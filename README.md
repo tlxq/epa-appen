@@ -2,7 +2,7 @@
 
 This repository contains the mobile frontend for the EPA App, built with React Native and Expo.
 
-![EPA App Preview](./assets/images/epa3.webp)
+![EPA App Preview](mobile/assets/images/epa3.webp)
 
 ---
 
