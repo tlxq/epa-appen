@@ -1,114 +1,44 @@
 import express from 'express';
-import bcrypt from 'bcrypt';
-import { sql } from '../config/db.js';
-import jwt from 'jsonwebtoken';
+import {
+  loginUser,
+  registerUser,
+  sendInvite,
+} from '../services/authService.js';
+import { auth } from '../middleware/auth.js';
+import { adminAuth } from '../middleware/adminAuth.js';
 
-const router = express.Router();
+export const authRoutes = express.Router();
 
-if (!process.env.JWT_SECRET) throw new Error('JWT_SECRET saknas i env!');
-
-router.post('/login', async (req, res) => {
-  const { email, password } = req.body;
-
-  if (!email || !password) {
-    return res.status(400).json({ error: 'Email och lösenord krävs' });
-  }
-
+authRoutes.post('/login', async (req, res) => {
   try {
-    const users = await sql`
-      SELECT id, email, username, password_hash
-      FROM users
-      WHERE email = ${email}
-    `;
-
-    if (users.length === 0) {
-      return res.status(401).json({ error: 'Fel inloggning' });
-    }
-
-    const user = users[0];
-    const validPassword = await bcrypt.compare(password, user.password_hash);
-
-    if (!validPassword) {
-      return res.status(401).json({ error: 'Fel inloggning' });
-    }
-
-    const token = jwt.sign(
-      {
-        userId: user.id,
-        email: user.email,
-      },
-      process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRES_IN || '24h' },
-    );
-
-    res.status(200).json({
-      token,
-      user: {
-        id: user.id,
-        email: user.email,
-        username: user.username,
-      },
-    });
-  } catch (error) {
-    console.error('❌ Auth login error:', error);
-    res.status(500).json({ error: 'Serverfel' });
+    const result = await loginUser(req.body);
+    return res.status(200).json(result);
+  } catch (e) {
+    return res.status(e.status || 500).json({ error: e.message });
   }
 });
 
-router.post('/register', async (req, res) => {
-  const { token, username, password } = req.body;
-
-  if (!token || !username || !password) {
-    return res
-      .status(400)
-      .json({ error: 'Token, username och lösenord krävs' });
-  }
-
-  if (password.length < 8) {
-    return res.status(400).json({ error: 'Lösenordet är för kort' });
-  }
-
+authRoutes.post('/register', async (req, res) => {
   try {
-    const invites = await sql`
-      SELECT email
-      FROM invites
-      WHERE token = ${token} AND used = false AND expires_at > now()
-    `;
-
-    if (invites.length === 0) {
-      return res.status(400).json({ error: 'Ogiltig eller använd invite' });
-    }
-
-    const email = invites[0].email;
-    const passwordHash = await bcrypt.hash(password, 12);
-
-    try {
-      await sql.begin(async (sql) => {
-        await sql`
-          INSERT INTO users (email, username, password_hash)
-          VALUES (${email}, ${username}, ${passwordHash})
-        `;
-
-        await sql`
-          UPDATE invites
-          SET used = true
-          WHERE token = ${token}
-        `;
-      });
-    } catch (error) {
-      if (error.code === '23505') {
-        return res
-          .status(400)
-          .json({ error: 'Username eller email finns redan' });
-      }
-      throw error;
-    }
-
-    res.status(201).json({ message: 'Användare registrerad' });
-  } catch (error) {
-    console.error('❌ Auth register error:', error);
-    res.status(500).json({ error: 'Registrering misslyckades' });
+    await registerUser(req.body);
+    return res.status(201).json({ message: 'Användare registrerad' });
+  } catch (e) {
+    return res.status(e.status || 500).json({ error: e.message });
   }
 });
 
-export default router;
+authRoutes.post('/invite', adminAuth, async (req, res) => {
+  try {
+    const { inviteLink } = await sendInvite(req.body);
+    return res.status(201).json({ message: 'Invite skickad', inviteLink });
+  } catch (e) {
+    return res.status(e.status || 500).json({ error: e.message });
+  }
+});
+
+authRoutes.get('/me', auth, (req, res) => {
+  res.status(200).json({
+    message: 'Du är inloggad',
+    user: req.user,
+  });
+});
