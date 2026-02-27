@@ -3,7 +3,7 @@ import { View, Text, TextInput, Button, StyleSheet, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_URL = process.env.RAIL_API_URL || 'https://api.ttdevs.com';
+const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://api.ttdevs.com';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -24,7 +24,12 @@ export default function LoginScreen() {
       }
       await AsyncStorage.setItem('jwt', data.token);
       Alert.alert('Inloggad', `Välkommen ${data.user.username}`);
-      router.replace('/(admin)/home');
+      // Navigera efter roll
+      if (data.user.role === 'admin') {
+        router.replace('/(admin)/home');
+      } else {
+        router.replace('/(user)/home');
+      }
     } catch (err) {
       console.error(err);
       Alert.alert('Fel', 'Kunde inte ansluta till servern');
@@ -33,7 +38,7 @@ export default function LoginScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Admin Login</Text>
+      <Text style={styles.title}>Login</Text>
       <TextInput
         placeholder="Email"
         value={email}

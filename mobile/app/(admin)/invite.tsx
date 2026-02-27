@@ -3,7 +3,7 @@ import { View, Text, Button, StyleSheet, Alert, TextInput } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_URL = process.env.RAIL_API_URL || 'https://api.ttdevs.com';
+const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://api.ttdevs.com';
 
 export default function InviteScreen() {
   const router = useRouter();
