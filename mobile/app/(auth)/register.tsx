@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { View, TextInput, Button, StyleSheet, Alert, Text } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 
+const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://api.ttdevs.com';
+
 export default function RegisterScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
@@ -33,7 +35,7 @@ export default function RegisterScreen() {
 
   const handleRegister = async () => {
     try {
-      const res = await fetch('http://192.168.50.22:5001/api/auth/register', {
+      const res = await fetch(`${API_URL}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token, username, password }),
