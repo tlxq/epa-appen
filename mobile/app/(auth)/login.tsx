@@ -3,6 +3,8 @@ import { View, Text, TextInput, Button, StyleSheet, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+const API_URL = process.env.RAIL_API_URL || 'https://api.ttdevs.com';
+
 export default function LoginScreen() {
   const router = useRouter();
   const [email, setEmail] = useState('');
@@ -10,7 +12,7 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     try {
-      const res = await fetch('http://192.168.50.22:5001/api/auth/login', {
+      const res = await fetch(`${API_URL}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
