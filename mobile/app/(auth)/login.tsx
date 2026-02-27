@@ -50,7 +50,6 @@ export default function LoginScreen() {
       style={styles.background}
       resizeMode="cover"
     >
-      {/* Optional: add dark overlay for contrast */}
       <View style={styles.overlay}>
         <Text style={styles.title}>Login</Text>
         <TextInput
@@ -70,7 +69,7 @@ export default function LoginScreen() {
           style={styles.input}
           secureTextEntry
         />
-        <Button title="Logga in" onPress={handleLogin} color="#fff" />
+        <Button title="Logga in" onPress={handleLogin} color="#000" />
       </View>
     </ImageBackground>
   );

@@ -2,6 +2,8 @@
 
 This repository contains the mobile frontend for the EPA App, built with React Native and Expo.
 
+![EPA App Preview](./assets/images/epa3.webp)
+
 ---
 
 ## Getting Started
@@ -26,6 +28,7 @@ This repository contains the mobile frontend for the EPA App, built with React N
    ```
 
 3. **Start Expo**
+
    ```bash
    npx expo start
    ```
