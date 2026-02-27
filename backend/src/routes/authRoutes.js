@@ -7,7 +7,6 @@ const router = express.Router();
 
 if (!process.env.JWT_SECRET) throw new Error('JWT_SECRET saknas i env!');
 
-// POST /api/auth/login
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
 
@@ -56,7 +55,6 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// POST /api/auth/register
 router.post('/register', async (req, res) => {
   const { token, username, password } = req.body;
 
@@ -71,7 +69,6 @@ router.post('/register', async (req, res) => {
   }
 
   try {
-    // Kolla invite-token: både used=false och ej expired!
     const invites = await sql`
       SELECT email
       FROM invites
@@ -85,7 +82,6 @@ router.post('/register', async (req, res) => {
     const email = invites[0].email;
     const passwordHash = await bcrypt.hash(password, 12);
 
-    // Atomic: skapa user + markera invite som used
     try {
       await sql.begin(async (sql) => {
         await sql`
@@ -101,7 +97,6 @@ router.post('/register', async (req, res) => {
       });
     } catch (error) {
       if (error.code === '23505') {
-        // Unique violation (användarnamn, email etc)
         return res
           .status(400)
           .json({ error: 'Username eller email finns redan' });

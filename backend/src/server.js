@@ -34,7 +34,6 @@ app.get('/api/me', auth, async (req, res) => {
   });
 });
 
-/* -------------------- HEALTH ROUTE ------------------- */
 app.get('/api/health', async (req, res) => {
   try {
     const result = await sql`SELECT 1 AS connected`;
@@ -53,7 +52,6 @@ app.use('/api/auth/invite', inviteRoutes);
 app.use('/api/auth/register', registerRoutes);
 app.use('/api/auth/login', loginRoutes);
 
-/* ------------------- START SERVER -------------------- */
 const startServer = async () => {
   try {
     await testDBConnection();

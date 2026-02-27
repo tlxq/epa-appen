@@ -23,7 +23,7 @@ export const sendInviteEmail = async ({ to, inviteLink }) => {
         <p><small>Länken kan bara användas en gång.</small></p>
       `,
     });
-    // Logga lyckade utskick för debug/senare analys (valfritt)
+
     console.log(
       '✉️ Invite email sent to:',
       to,
@@ -32,6 +32,6 @@ export const sendInviteEmail = async ({ to, inviteLink }) => {
     );
   } catch (error) {
     console.error('❌ Misslyckades skicka invite-mail:', error);
-    throw error; // Propagera felet, så /invite-route kan hantera/visa användaren!
+    throw error;
   }
 };

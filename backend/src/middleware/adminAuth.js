@@ -14,9 +14,8 @@ export const adminAuth = async (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded; // { userId, email }
+    req.user = decoded;
 
-    // Kolla role i DB
     const users = await sql`
       SELECT role
       FROM users

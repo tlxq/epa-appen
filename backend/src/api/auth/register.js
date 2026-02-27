@@ -4,7 +4,6 @@ import { sql } from '../../config/db.js';
 
 const router = express.Router();
 
-// POST /api/auth/register
 router.post('/', async (req, res) => {
   const { token, username, password } = req.body;
 
@@ -33,7 +32,6 @@ router.post('/', async (req, res) => {
     const email = invites[0].email;
     const passwordHash = await bcrypt.hash(password, 10);
 
-    // Transaction: skapa user + markera invite som used
     try {
       await sql.begin(async (sql) => {
         await sql`
@@ -49,7 +47,6 @@ router.post('/', async (req, res) => {
       });
     } catch (error) {
       if (error.code === '23505') {
-        // Hantera unikt email/användarnamn
         return res
           .status(400)
           .json({ error: 'Email eller användarnamn redan upptaget' });
