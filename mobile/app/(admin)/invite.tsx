@@ -3,6 +3,8 @@ import { View, Text, Button, StyleSheet, Alert, TextInput } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+const API_URL = process.env.RAIL_API_URL || 'https://api.ttdevs.com';
+
 export default function InviteScreen() {
   const router = useRouter();
   const [email, setEmail] = useState('');
@@ -22,11 +24,11 @@ export default function InviteScreen() {
     setLoading(true);
     try {
       const token = await AsyncStorage.getItem('jwt');
-      const res = await fetch('http://192.168.50.22:5001/api/auth/invite', {
+      const res = await fetch(`${API_URL}/api/auth/invite`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: 'Bearer ' + token, // if your API uses auth
+          Authorization: 'Bearer ' + token,
         },
         body: JSON.stringify({ email }),
       });
@@ -38,7 +40,7 @@ export default function InviteScreen() {
       }
       Alert.alert(
         'Invite skickad',
-        `Inbjudan skickad till ${email}!\nLänk: ${data.link || ''}`,
+        `Inbjudan skickad till ${email}!\nLänk: ${data.inviteLink || ''}`,
       );
       setEmail('');
     } catch (err) {
