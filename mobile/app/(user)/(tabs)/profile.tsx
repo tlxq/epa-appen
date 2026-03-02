@@ -56,7 +56,7 @@ export default function ProfileTab() {
       }
 
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'], // <-- ny API-form
+        mediaTypes: ['images'],
         quality: 0.85,
       });
 
@@ -146,6 +146,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: 'center',
     marginBottom: 14,
+    backgroundColor: '#111',
   },
   buttonText: { color: '#fff', fontWeight: '700', fontSize: 16 },
 });

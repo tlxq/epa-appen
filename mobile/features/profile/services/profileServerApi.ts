@@ -50,15 +50,28 @@ export async function updateMe(input: {
   return data.user;
 }
 
+function guessFileTypeFromUri(uri: string) {
+  const lower = uri.toLowerCase();
+
+  if (lower.endsWith('.png')) return { type: 'image/png', name: 'avatar.png' };
+  if (lower.endsWith('.webp'))
+    return { type: 'image/webp', name: 'avatar.webp' };
+  if (lower.endsWith('.heic'))
+    return { type: 'image/heic', name: 'avatar.heic' };
+  if (lower.endsWith('.heif'))
+    return { type: 'image/heif', name: 'avatar.heif' };
+
+  // default
+  return { type: 'image/jpeg', name: 'avatar.jpg' };
+}
+
 export async function uploadAvatar(uri: string) {
   const jwt = await getJwt();
 
+  const { type, name } = guessFileTypeFromUri(uri);
+
   const form = new FormData();
-  form.append('avatar', {
-    uri,
-    name: 'avatar.jpg',
-    type: 'image/jpeg',
-  } as any);
+  form.append('avatar', { uri, name, type } as any);
 
   const res = await fetch(`${API_URL}/api/users/me/avatar`, {
     method: 'POST',
@@ -66,8 +79,21 @@ export async function uploadAvatar(uri: string) {
     body: form,
   });
 
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data?.error || 'Kunde inte ladda upp bild');
+  // Läs alltid som text för bättre felsökning
+  const text = await res.text();
+  console.log('uploadAvatar status:', res.status);
+  console.log('uploadAvatar response:', text);
+
+  let data: any = {};
+  try {
+    data = JSON.parse(text);
+  } catch {}
+
+  if (!res.ok) {
+    throw new Error(
+      data?.details || data?.error || `Upload failed (${res.status})`,
+    );
+  }
 
   return data.avatarUrl as string;
 }

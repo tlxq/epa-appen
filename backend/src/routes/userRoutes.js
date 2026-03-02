@@ -24,7 +24,7 @@ userRoutes.get('/me', auth, async (req, res) => {
     `;
 
     if (users.length === 0)
-      return res.status(404).json({ error: 'Användare hittades inte' });
+      return res.status(404).json({ error: 'Anv��ndare hittades inte' });
 
     return res.status(200).json({ user: users[0] });
   } catch (e) {
@@ -59,7 +59,6 @@ userRoutes.put('/me', auth, async (req, res) => {
 
     return res.status(200).json({ user: updated[0] });
   } catch (e) {
-    // t.ex. unique constraint på username
     if (e.code === '23505') {
       return res
         .status(400)
@@ -80,14 +79,23 @@ userRoutes.post(
   async (req, res) => {
     try {
       const userId = req.user.userId;
+
       if (!req.file)
         return res.status(400).json({ error: 'Ingen fil mottagen' });
 
-      const allowed = ['image/jpeg', 'image/png', 'image/webp'];
+      // Mer tolerant lista (Android/iOS kan variera)
+      const allowed = [
+        'image/jpeg',
+        'image/jpg',
+        'image/png',
+        'image/webp',
+        'image/heic',
+        'image/heif',
+      ];
       if (!allowed.includes(req.file.mimetype)) {
-        return res
-          .status(400)
-          .json({ error: 'Endast jpg/png/webp är tillåtet' });
+        return res.status(400).json({
+          error: `Endast bilder är tillåtna (jpg/jpeg/png/webp/heic). Fick: ${req.file.mimetype}`,
+        });
       }
 
       const base64 = req.file.buffer.toString('base64');
@@ -95,7 +103,7 @@ userRoutes.post(
 
       const uploadResult = await cloudinary.uploader.upload(dataUri, {
         folder: 'epa-appen/avatars',
-        public_id: `user_${userId}`,
+        public_id: `user_${userId}`, // samma id => ersätter tidigare avatar
         overwrite: true,
         resource_type: 'image',
         transformation: [
@@ -108,13 +116,16 @@ userRoutes.post(
       const avatarUrl = uploadResult.secure_url;
 
       await sql`
-      UPDATE users
-      SET avatar_url = ${avatarUrl}
-      WHERE id = ${userId}
-    `;
+        UPDATE users
+        SET avatar_url = ${avatarUrl}
+        WHERE id = ${userId}
+      `;
 
       return res.status(200).json({ avatarUrl });
     } catch (e) {
+      // Viktigt: logga hela felet i backend-terminalen
+      console.error('Avatar upload error:', e);
+
       return res
         .status(500)
         .json({ error: 'Kunde inte ladda upp avatar', details: e.message });
