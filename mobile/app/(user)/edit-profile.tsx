@@ -83,14 +83,21 @@ export default function EditProfileScreen() {
   const save = async () => {
     try {
       setSaving(true);
+
       await updateMe({
         name: name.trim(),
         bio: bio.trim(),
         car_make: carMake.trim(),
         car_model: carModel.trim(),
       });
+
       Alert.alert('Sparat', 'Din profil är uppdaterad.');
-      router.back();
+
+      // Viktigt: trigga refresh på profilsidan när vi lämnar modalen
+      router.replace({
+        pathname: '/(user)/(tabs)/profile',
+        params: { refresh: String(Date.now()) },
+      });
     } catch (e: any) {
       Alert.alert('Fel', e.message);
     } finally {
