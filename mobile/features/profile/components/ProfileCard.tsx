@@ -2,17 +2,31 @@ import React from 'react';
 import { View, Text, StyleSheet, Image } from 'react-native';
 
 type Props = {
-  name: string;
+  username: string;
   email: string;
-  avatarUrl?: string;
+  avatarUrl?: string | null;
   car?: string;
 };
 
-export default function ProfileCard({ name, email, avatarUrl, car }: Props) {
+export default function ProfileCard({
+  username,
+  email,
+  avatarUrl,
+  car,
+}: Props) {
   return (
     <View style={styles.card}>
-      {avatarUrl && <Image source={{ uri: avatarUrl }} style={styles.avatar} />}
-      <Text style={styles.name}>{name}</Text>
+      {avatarUrl ? (
+        <Image source={{ uri: avatarUrl }} style={styles.avatar} />
+      ) : (
+        <View style={styles.avatarPlaceholder}>
+          <Text style={styles.avatarText}>
+            {username?.[0]?.toUpperCase() || '?'}
+          </Text>
+        </View>
+      )}
+
+      <Text style={styles.name}>{username}</Text>
       <Text style={styles.email}>{email}</Text>
       {car && <Text style={styles.car}>🚗 {car}</Text>}
     </View>
@@ -37,17 +51,21 @@ const styles = StyleSheet.create({
     borderRadius: 40,
     marginBottom: 12,
   },
-  name: {
-    fontSize: 18,
-    fontWeight: '600',
+  avatarPlaceholder: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    marginBottom: 12,
+    backgroundColor: '#bbb',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  email: {
-    fontSize: 14,
-    color: 'gray',
-    marginBottom: 8,
+  avatarText: {
+    color: '#fff',
+    fontSize: 28,
+    fontWeight: 'bold',
   },
-  car: {
-    fontSize: 16,
-    marginTop: 8,
-  },
+  name: { fontSize: 18, fontWeight: '600' },
+  email: { fontSize: 14, color: 'gray', marginBottom: 8 },
+  car: { fontSize: 16, marginTop: 8 },
 });

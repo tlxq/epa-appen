@@ -6,43 +6,34 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
+  Text,
 } from 'react-native';
 
-import { getProfile, updateProfile } from '../services/profileApi';
-
-export type Profile = {
-  name: string;
-  email: string;
-  avatarUrl?: string;
-};
+import {
+  fetchMe,
+  updateMe,
+  type ServerUser,
+} from '../services/profileServerApi';
 
 type Props = {
   onSave?: () => void;
 };
 
 export default function ProfileForm({ onSave }: Props) {
-  const [profile, setProfile] = useState<Profile>({
-    name: '',
-    email: '',
-    avatarUrl: '',
-  });
+  const [me, setMe] = useState<ServerUser | null>(null);
+  const [username, setUsername] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     (async () => {
       try {
-        const p = await getProfile();
-        if (p) {
-          setProfile({
-            name: p.name || '',
-            email: p.email || '',
-            avatarUrl: p.avatarUrl || '',
-          });
-        }
-      } catch (err) {
+        const user = await fetchMe();
+        setMe(user);
+        setUsername(user.username || '');
+      } catch (err: any) {
         console.log('Fel vid hämtning av profil:', err);
-        Alert.alert('Fel', 'Kunde inte hämta profildata.');
+        Alert.alert('Fel', err.message || 'Kunde inte hämta profildata.');
       } finally {
         setLoading(false);
       }
@@ -50,19 +41,20 @@ export default function ProfileForm({ onSave }: Props) {
   }, []);
 
   const handleSave = async () => {
-    if (!profile.name.trim() || !profile.email.includes('@')) {
-      Alert.alert('Fel', 'Ange ett giltigt namn och e-postadress.');
+    if (!username.trim()) {
+      Alert.alert('Fel', 'Ange ett användarnamn.');
       return;
     }
 
     setSaving(true);
     try {
-      await updateProfile(profile);
+      const updated = await updateMe({ username: username.trim() });
+      setMe(updated);
       Alert.alert('Klart!', 'Profilen har uppdaterats.');
       if (onSave) onSave();
-    } catch (err) {
+    } catch (err: any) {
       console.log('Fel vid uppdatering:', err);
-      Alert.alert('Fel', 'Kunde inte uppdatera profilen.');
+      Alert.alert('Fel', err.message || 'Kunde inte uppdatera profilen.');
     } finally {
       setSaving(false);
     }
@@ -70,41 +62,52 @@ export default function ProfileForm({ onSave }: Props) {
 
   if (loading) return <ActivityIndicator style={{ marginTop: 50 }} />;
 
+  if (!me) {
+    return (
+      <View style={styles.container}>
+        <Text>Kunde inte ladda profilen.</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
+      <Text style={styles.label}>E-post (går ej att ändra)</Text>
       <TextInput
-        placeholder="Namn"
-        value={profile.name}
-        onChangeText={(text) => setProfile({ ...profile, name: text })}
+        value={me.email}
+        editable={false}
+        style={[styles.input, styles.disabled]}
+      />
+
+      <Text style={styles.label}>Användarnamn</Text>
+      <TextInput
+        placeholder="username"
+        value={username}
+        onChangeText={setUsername}
+        autoCapitalize="none"
         style={styles.input}
       />
-      <TextInput
-        placeholder="E-post"
-        value={profile.email}
-        onChangeText={(text) => setProfile({ ...profile, email: text })}
-        keyboardType="email-address"
-        style={styles.input}
+
+      <Button
+        title={saving ? 'Sparar...' : 'Spara profil'}
+        onPress={handleSave}
+        disabled={saving}
       />
-      <TextInput
-        placeholder="Avatar URL"
-        value={profile.avatarUrl}
-        onChangeText={(text) => setProfile({ ...profile, avatarUrl: text })}
-        style={styles.input}
-      />
-      <Button title="Spara profil" onPress={handleSave} disabled={saving} />
       {saving && <ActivityIndicator style={{ marginTop: 10 }} />}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    padding: 20,
-  },
+  container: { padding: 20 },
+  label: { marginBottom: 6, fontWeight: '600' },
   input: {
     backgroundColor: '#f2f2f2',
     padding: 12,
     borderRadius: 8,
     marginBottom: 12,
+  },
+  disabled: {
+    opacity: 0.7,
   },
 });

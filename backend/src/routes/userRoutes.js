@@ -12,6 +12,7 @@ const upload = multer({
   limits: { fileSize: 3 * 1024 * 1024 }, // 3MB
 });
 
+// GET /api/users/me
 userRoutes.get('/me', auth, async (req, res) => {
   try {
     const userId = req.user.userId;
@@ -22,9 +23,8 @@ userRoutes.get('/me', auth, async (req, res) => {
       WHERE id = ${userId}
     `;
 
-    if (users.length === 0) {
+    if (users.length === 0)
       return res.status(404).json({ error: 'Användare hittades inte' });
-    }
 
     return res.status(200).json({ user: users[0] });
   } catch (e) {
@@ -34,6 +34,45 @@ userRoutes.get('/me', auth, async (req, res) => {
   }
 });
 
+// PUT /api/users/me  (uppdatera username)
+userRoutes.put('/me', auth, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { username } = req.body;
+
+    if (!username || typeof username !== 'string') {
+      return res.status(400).json({ error: 'username krävs' });
+    }
+
+    if (!/^[a-zA-Z0-9_]{3,32}$/.test(username)) {
+      return res
+        .status(400)
+        .json({ error: 'Ogiltigt användarnamn (3-32 tecken, a-z 0-9 _)' });
+    }
+
+    const updated = await sql`
+      UPDATE users
+      SET username = ${username}
+      WHERE id = ${userId}
+      RETURNING id, email, username, role, created_at, avatar_url
+    `;
+
+    return res.status(200).json({ user: updated[0] });
+  } catch (e) {
+    // t.ex. unique constraint på username
+    if (e.code === '23505') {
+      return res
+        .status(400)
+        .json({ error: 'Användarnamnet är redan upptaget' });
+    }
+
+    return res
+      .status(500)
+      .json({ error: 'Kunde inte uppdatera profil', details: e.message });
+  }
+});
+
+// POST /api/users/me/avatar  (upload till Cloudinary + spara URL)
 userRoutes.post(
   '/me/avatar',
   auth,
@@ -41,7 +80,6 @@ userRoutes.post(
   async (req, res) => {
     try {
       const userId = req.user.userId;
-
       if (!req.file)
         return res.status(400).json({ error: 'Ingen fil mottagen' });
 

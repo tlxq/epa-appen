@@ -30,6 +30,26 @@ export async function fetchMe(): Promise<ServerUser> {
   return data.user;
 }
 
+export async function updateMe(input: {
+  username: string;
+}): Promise<ServerUser> {
+  const jwt = await getJwt();
+
+  const res = await fetch(`${API_URL}/api/users/me`, {
+    method: 'PUT',
+    headers: {
+      Authorization: `Bearer ${jwt}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(input),
+  });
+
+  const data = await res.json();
+  if (!res.ok) throw new Error(data?.error || 'Kunde inte uppdatera profil');
+
+  return data.user;
+}
+
 export async function uploadAvatar(uri: string) {
   const jwt = await getJwt();
 
