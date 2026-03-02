@@ -21,7 +21,7 @@ type Props = {
 
 export default function ProfileForm({ onSave }: Props) {
   const [me, setMe] = useState<ServerUser | null>(null);
-  const [username, setUsername] = useState('');
+  const [name, setName] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -30,7 +30,7 @@ export default function ProfileForm({ onSave }: Props) {
       try {
         const user = await fetchMe();
         setMe(user);
-        setUsername(user.username || '');
+        setName(user.name || '');
       } catch (err: any) {
         console.log('Fel vid hämtning av profil:', err);
         Alert.alert('Fel', err.message || 'Kunde inte hämta profildata.');
@@ -41,14 +41,14 @@ export default function ProfileForm({ onSave }: Props) {
   }, []);
 
   const handleSave = async () => {
-    if (!username.trim()) {
-      Alert.alert('Fel', 'Ange ett användarnamn.');
+    if (!name.trim() || name.trim().length < 2) {
+      Alert.alert('Fel', 'Ange ett giltigt namn (minst 2 tecken).');
       return;
     }
 
     setSaving(true);
     try {
-      const updated = await updateMe({ username: username.trim() });
+      const updated = await updateMe({ name: name.trim() });
       setMe(updated);
       Alert.alert('Klart!', 'Profilen har uppdaterats.');
       if (onSave) onSave();
@@ -79,12 +79,11 @@ export default function ProfileForm({ onSave }: Props) {
         style={[styles.input, styles.disabled]}
       />
 
-      <Text style={styles.label}>Användarnamn</Text>
+      <Text style={styles.label}>Namn</Text>
       <TextInput
-        placeholder="username"
-        value={username}
-        onChangeText={setUsername}
-        autoCapitalize="none"
+        placeholder="Ditt namn"
+        value={name}
+        onChangeText={setName}
         style={styles.input}
       />
 
@@ -107,7 +106,5 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 12,
   },
-  disabled: {
-    opacity: 0.7,
-  },
+  disabled: { opacity: 0.7 },
 });

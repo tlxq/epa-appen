@@ -4,6 +4,15 @@ export default function UserLayout() {
   return (
     <Stack>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+
+      <Stack.Screen
+        name="edit-profile"
+        options={{
+          presentation: 'modal',
+          title: 'Profilinställningar',
+        }}
+      />
+
       <Stack.Screen
         name="edit-car"
         options={{

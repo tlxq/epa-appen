@@ -12,19 +12,28 @@ const upload = multer({
   limits: { fileSize: 3 * 1024 * 1024 }, // 3MB
 });
 
-// GET /api/users/me
 userRoutes.get('/me', auth, async (req, res) => {
   try {
     const userId = req.user.userId;
 
     const users = await sql`
-      SELECT id, email, username, role, created_at, avatar_url
+      SELECT
+        id,
+        email,
+        username,
+        role,
+        created_at,
+        avatar_url,
+        name,
+        bio,
+        car_make,
+        car_model
       FROM users
       WHERE id = ${userId}
     `;
 
     if (users.length === 0)
-      return res.status(404).json({ error: 'Anv��ndare hittades inte' });
+      return res.status(404).json({ error: 'Användare hittades inte' });
 
     return res.status(200).json({ user: users[0] });
   } catch (e) {
@@ -34,44 +43,65 @@ userRoutes.get('/me', auth, async (req, res) => {
   }
 });
 
-// PUT /api/users/me  (uppdatera username)
 userRoutes.put('/me', auth, async (req, res) => {
   try {
     const userId = req.user.userId;
-    const { username } = req.body;
+    const { name, bio, car_make, car_model } = req.body;
 
-    if (!username || typeof username !== 'string') {
-      return res.status(400).json({ error: 'username krävs' });
+    if (
+      name !== undefined &&
+      (typeof name !== 'string' || name.trim().length < 2)
+    ) {
+      return res.status(400).json({ error: 'Namn måste vara minst 2 tecken' });
     }
 
-    if (!/^[a-zA-Z0-9_]{3,32}$/.test(username)) {
-      return res
-        .status(400)
-        .json({ error: 'Ogiltigt användarnamn (3-32 tecken, a-z 0-9 _)' });
+    if (bio !== undefined && (typeof bio !== 'string' || bio.length > 280)) {
+      return res.status(400).json({ error: 'Bio får max vara 280 tecken' });
+    }
+
+    if (
+      car_make !== undefined &&
+      (typeof car_make !== 'string' || car_make.length > 40)
+    ) {
+      return res.status(400).json({ error: 'Bil-märke är för långt' });
+    }
+
+    if (
+      car_model !== undefined &&
+      (typeof car_model !== 'string' || car_model.length > 40)
+    ) {
+      return res.status(400).json({ error: 'Bil-modell är för långt' });
     }
 
     const updated = await sql`
       UPDATE users
-      SET username = ${username}
+      SET
+        name = COALESCE(${name}, name),
+        bio = COALESCE(${bio}, bio),
+        car_make = COALESCE(${car_make}, car_make),
+        car_model = COALESCE(${car_model}, car_model)
       WHERE id = ${userId}
-      RETURNING id, email, username, role, created_at, avatar_url
+      RETURNING
+        id,
+        email,
+        username,
+        role,
+        created_at,
+        avatar_url,
+        name,
+        bio,
+        car_make,
+        car_model
     `;
 
     return res.status(200).json({ user: updated[0] });
   } catch (e) {
-    if (e.code === '23505') {
-      return res
-        .status(400)
-        .json({ error: 'Användarnamnet är redan upptaget' });
-    }
-
     return res
       .status(500)
       .json({ error: 'Kunde inte uppdatera profil', details: e.message });
   }
 });
 
-// POST /api/users/me/avatar  (upload till Cloudinary + spara URL)
 userRoutes.post(
   '/me/avatar',
   auth,
@@ -83,7 +113,6 @@ userRoutes.post(
       if (!req.file)
         return res.status(400).json({ error: 'Ingen fil mottagen' });
 
-      // Mer tolerant lista (Android/iOS kan variera)
       const allowed = [
         'image/jpeg',
         'image/jpg',
@@ -103,7 +132,7 @@ userRoutes.post(
 
       const uploadResult = await cloudinary.uploader.upload(dataUri, {
         folder: 'epa-appen/avatars',
-        public_id: `user_${userId}`, // samma id => ersätter tidigare avatar
+        public_id: `user_${userId}`,
         overwrite: true,
         resource_type: 'image',
         transformation: [
@@ -116,16 +145,14 @@ userRoutes.post(
       const avatarUrl = uploadResult.secure_url;
 
       await sql`
-        UPDATE users
-        SET avatar_url = ${avatarUrl}
-        WHERE id = ${userId}
-      `;
+      UPDATE users
+      SET avatar_url = ${avatarUrl}
+      WHERE id = ${userId}
+    `;
 
       return res.status(200).json({ avatarUrl });
     } catch (e) {
-      // Viktigt: logga hela felet i backend-terminalen
       console.error('Avatar upload error:', e);
-
       return res
         .status(500)
         .json({ error: 'Kunde inte ladda upp avatar', details: e.message });

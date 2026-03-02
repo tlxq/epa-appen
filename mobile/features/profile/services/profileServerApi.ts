@@ -8,7 +8,12 @@ export type ServerUser = {
   username: string;
   role: string;
   created_at?: string;
+
   avatar_url?: string | null;
+  name?: string | null;
+  bio?: string | null;
+  car_make?: string | null;
+  car_model?: string | null;
 };
 
 async function getJwt() {
@@ -26,12 +31,14 @@ export async function fetchMe(): Promise<ServerUser> {
 
   const data = await res.json();
   if (!res.ok) throw new Error(data?.error || 'Kunde inte hämta profil');
-
   return data.user;
 }
 
 export async function updateMe(input: {
-  username: string;
+  name?: string;
+  bio?: string;
+  car_make?: string;
+  car_model?: string;
 }): Promise<ServerUser> {
   const jwt = await getJwt();
 
@@ -45,14 +52,15 @@ export async function updateMe(input: {
   });
 
   const data = await res.json();
-  if (!res.ok) throw new Error(data?.error || 'Kunde inte uppdatera profil');
-
+  if (!res.ok)
+    throw new Error(
+      data?.error || data?.details || 'Kunde inte uppdatera profil',
+    );
   return data.user;
 }
 
 function guessFileTypeFromUri(uri: string) {
   const lower = uri.toLowerCase();
-
   if (lower.endsWith('.png')) return { type: 'image/png', name: 'avatar.png' };
   if (lower.endsWith('.webp'))
     return { type: 'image/webp', name: 'avatar.webp' };
@@ -60,8 +68,6 @@ function guessFileTypeFromUri(uri: string) {
     return { type: 'image/heic', name: 'avatar.heic' };
   if (lower.endsWith('.heif'))
     return { type: 'image/heif', name: 'avatar.heif' };
-
-  // default
   return { type: 'image/jpeg', name: 'avatar.jpg' };
 }
 
@@ -79,11 +85,7 @@ export async function uploadAvatar(uri: string) {
     body: form,
   });
 
-  // Läs alltid som text för bättre felsökning
   const text = await res.text();
-  console.log('uploadAvatar status:', res.status);
-  console.log('uploadAvatar response:', text);
-
   let data: any = {};
   try {
     data = JSON.parse(text);
