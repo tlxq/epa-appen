@@ -6,52 +6,102 @@ import {
   Text,
   TouchableOpacity,
   Image,
+  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useCar } from '../../../features/car/hooks/CarContext';
+import * as ImagePicker from 'expo-image-picker';
 
-import { getProfile } from '../../../features/profile/services/profileApi';
+import { useCar } from '../../../features/car/hooks/CarContext';
 import CarSummaryCard from '../../../features/car/components/CarSummaryCard';
+
+import {
+  fetchMyProfile,
+  uploadMyAvatar,
+  resolveAvatarUrl,
+  type ServerUser,
+} from '../../../features/profile/services/profileServerApi';
 
 export default function ProfileTab() {
   const router = useRouter();
-  const [profile, setProfile] = useState<any>(null);
-  const { car } = useCar(); //
+  const [profile, setProfile] = useState<ServerUser | null>(null);
+  const { car } = useCar();
+
+  async function load() {
+    try {
+      const p = await fetchMyProfile();
+      setProfile(p);
+    } catch (e: any) {
+      Alert.alert('Du är utloggad', e.message);
+      router.replace('/(auth)/login');
+    }
+  }
 
   useEffect(() => {
-    (async () => {
-      const p = await getProfile();
-      setProfile(p);
-    })();
+    load();
   }, []);
+
+  const handleUploadAvatar = async () => {
+    try {
+      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!perm.granted) {
+        Alert.alert('Behörighet krävs', 'Du behöver ge tillgång till Bilder.');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        quality: 0.8,
+      });
+
+      if (result.canceled) return;
+
+      const uri = result.assets[0].uri;
+
+      await uploadMyAvatar(uri);
+      Alert.alert('Klart', 'Din profilbild är uppdaterad.');
+
+      // Ladda om profilen så vi får ny avatar_url
+      await load();
+    } catch (e: any) {
+      Alert.alert('Fel', e.message);
+    }
+  };
+
+  const avatarUri = resolveAvatarUrl(profile?.avatar_url);
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
       {profile && (
         <View style={styles.card}>
           <View style={styles.profileRow}>
-            {profile.avatarUrl ? (
-              <Image
-                source={{ uri: profile.avatarUrl }}
-                style={styles.avatar}
-              />
+            {avatarUri ? (
+              <Image source={{ uri: avatarUri }} style={styles.avatar} />
             ) : (
               <View style={styles.avatarPlaceholder}>
                 <Text style={styles.avatarText}>
-                  {profile.name?.[0] || '?'}
+                  {profile.username?.[0]?.toUpperCase() || '?'}
                 </Text>
               </View>
             )}
+
             <View style={styles.profileInfo}>
-              <Text style={styles.name}>{profile.name}</Text>
+              <Text style={styles.name}>{profile.username}</Text>
               <Text style={styles.email}>{profile.email}</Text>
               {car && (
                 <Text style={styles.car}>
                   {car.make} {car.model}
                 </Text>
               )}
+              <Text style={styles.role}>Roll: {profile.role}</Text>
             </View>
           </View>
+
+          <TouchableOpacity
+            style={[styles.button, { backgroundColor: '#111', marginTop: 14 }]}
+            onPress={handleUploadAvatar}
+          >
+            <Text style={styles.buttonText}>Ladda upp profilbild</Text>
+          </TouchableOpacity>
         </View>
       )}
 
@@ -133,6 +183,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
     fontWeight: '500',
+  },
+  role: {
+    marginTop: 4,
+    fontSize: 12,
+    color: '#777',
   },
   buttons: {
     flexDirection: 'row',
