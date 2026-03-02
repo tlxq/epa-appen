@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Image,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
@@ -15,67 +16,84 @@ import { useCar } from '../../../features/car/hooks/CarContext';
 import CarSummaryCard from '../../../features/car/components/CarSummaryCard';
 
 import {
-  fetchMyProfile,
-  uploadMyAvatar,
-  resolveAvatarUrl,
+  fetchMe,
+  uploadAvatar,
   type ServerUser,
 } from '../../../features/profile/services/profileServerApi';
 
 export default function ProfileTab() {
   const router = useRouter();
-  const [profile, setProfile] = useState<ServerUser | null>(null);
   const { car } = useCar();
 
-  async function load() {
+  const [profile, setProfile] = useState<ServerUser | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
+  const loadProfile = async () => {
     try {
-      const p = await fetchMyProfile();
-      setProfile(p);
+      setLoading(true);
+      const me = await fetchMe();
+      setProfile(me);
     } catch (e: any) {
       Alert.alert('Du är utloggad', e.message);
       router.replace('/(auth)/login');
+    } finally {
+      setLoading(false);
     }
-  }
+  };
 
   useEffect(() => {
-    load();
+    loadProfile();
   }, []);
 
-  const handleUploadAvatar = async () => {
+  const handlePickAndUploadAvatar = async () => {
     try {
       const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!perm.granted) {
-        Alert.alert('Behörighet krävs', 'Du behöver ge tillgång till Bilder.');
+        Alert.alert('Behörighet krävs', 'Ge appen tillgång till Bilder.');
         return;
       }
 
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        quality: 0.8,
+        quality: 0.85,
       });
 
       if (result.canceled) return;
 
+      setUploadingAvatar(true);
       const uri = result.assets[0].uri;
 
-      await uploadMyAvatar(uri);
-      Alert.alert('Klart', 'Din profilbild är uppdaterad.');
+      await uploadAvatar(uri);
 
-      // Ladda om profilen så vi får ny avatar_url
-      await load();
+      Alert.alert('Klart', 'Din profilbild är uppdaterad.');
+      await loadProfile();
     } catch (e: any) {
       Alert.alert('Fel', e.message);
+    } finally {
+      setUploadingAvatar(false);
     }
   };
 
-  const avatarUri = resolveAvatarUrl(profile?.avatar_url);
+  if (loading) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator />
+        <Text style={{ marginTop: 10 }}>Laddar profil...</Text>
+      </View>
+    );
+  }
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
       {profile && (
         <View style={styles.card}>
           <View style={styles.profileRow}>
-            {avatarUri ? (
-              <Image source={{ uri: avatarUri }} style={styles.avatar} />
+            {profile.avatar_url ? (
+              <Image
+                source={{ uri: profile.avatar_url }}
+                style={styles.avatar}
+              />
             ) : (
               <View style={styles.avatarPlaceholder}>
                 <Text style={styles.avatarText}>
@@ -87,20 +105,27 @@ export default function ProfileTab() {
             <View style={styles.profileInfo}>
               <Text style={styles.name}>{profile.username}</Text>
               <Text style={styles.email}>{profile.email}</Text>
+              <Text style={styles.role}>Roll: {profile.role}</Text>
+
               {car && (
                 <Text style={styles.car}>
                   {car.make} {car.model}
                 </Text>
               )}
-              <Text style={styles.role}>Roll: {profile.role}</Text>
             </View>
           </View>
 
           <TouchableOpacity
-            style={[styles.button, { backgroundColor: '#111', marginTop: 14 }]}
-            onPress={handleUploadAvatar}
+            style={[
+              styles.buttonFull,
+              { backgroundColor: uploadingAvatar ? '#555' : '#111' },
+            ]}
+            onPress={handlePickAndUploadAvatar}
+            disabled={uploadingAvatar}
           >
-            <Text style={styles.buttonText}>Ladda upp profilbild</Text>
+            <Text style={styles.buttonText}>
+              {uploadingAvatar ? 'Laddar upp...' : 'Ladda upp profilbild'}
+            </Text>
           </TouchableOpacity>
         </View>
       )}
@@ -128,6 +153,11 @@ export default function ProfileTab() {
 }
 
 const styles = StyleSheet.create({
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   container: {
     padding: 20,
     backgroundColor: '#f5f5f5',
@@ -179,15 +209,15 @@ const styles = StyleSheet.create({
     color: '#666',
     marginBottom: 6,
   },
+  role: {
+    fontSize: 12,
+    color: '#777',
+    marginBottom: 6,
+  },
   car: {
     fontSize: 16,
     color: '#333',
     fontWeight: '500',
-  },
-  role: {
-    marginTop: 4,
-    fontSize: 12,
-    color: '#777',
   },
   buttons: {
     flexDirection: 'row',
@@ -199,6 +229,12 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 10,
     alignItems: 'center',
+  },
+  buttonFull: {
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginTop: 14,
   },
   buttonText: {
     color: '#fff',

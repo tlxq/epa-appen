@@ -11,9 +11,14 @@ export type ServerUser = {
   avatar_url?: string | null;
 };
 
-export async function fetchMyProfile(): Promise<ServerUser> {
+async function getJwt() {
   const jwt = await AsyncStorage.getItem('jwt');
-  if (!jwt) throw new Error('Ingen JWT hittades (inte inloggad)');
+  if (!jwt) throw new Error('Inte inloggad (JWT saknas)');
+  return jwt;
+}
+
+export async function fetchMe(): Promise<ServerUser> {
+  const jwt = await getJwt();
 
   const res = await fetch(`${API_URL}/api/users/me`, {
     headers: { Authorization: `Bearer ${jwt}` },
@@ -25,15 +30,10 @@ export async function fetchMyProfile(): Promise<ServerUser> {
   return data.user;
 }
 
-export async function uploadMyAvatar(
-  uri: string,
-): Promise<{ avatarUrl: string }> {
-  const jwt = await AsyncStorage.getItem('jwt');
-  if (!jwt) throw new Error('Ingen JWT hittades (inte inloggad)');
+export async function uploadAvatar(uri: string) {
+  const jwt = await getJwt();
 
   const form = new FormData();
-
-  // React Native FormData file object
   form.append('avatar', {
     uri,
     name: 'avatar.jpg',
@@ -42,22 +42,12 @@ export async function uploadMyAvatar(
 
   const res = await fetch(`${API_URL}/api/users/me/avatar`, {
     method: 'POST',
-    headers: {
-      Authorization: `Bearer ${jwt}`,
-    },
+    headers: { Authorization: `Bearer ${jwt}` },
     body: form,
   });
 
-  const data = await res.json();
+  const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data?.error || 'Kunde inte ladda upp bild');
 
-  return { avatarUrl: data.avatarUrl };
-}
-
-export function resolveAvatarUrl(avatar_url?: string | null) {
-  if (!avatar_url) return null;
-
-  if (avatar_url.startsWith('http://') || avatar_url.startsWith('https://'))
-    return avatar_url;
-  return `${API_URL}${avatar_url}`;
+  return data.avatarUrl as string;
 }
