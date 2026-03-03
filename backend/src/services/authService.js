@@ -58,15 +58,13 @@ export async function registerUser({ token, username, password }) {
   const passwordHash = await bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
 
   try {
-    await sql.begin(async (sql) => {
-      await sql`
-        INSERT INTO users (email, username, password_hash)
-        VALUES (${email}, ${username}, ${passwordHash})
-      `;
-      await sql`
-        UPDATE invites SET used = true WHERE token = ${token}
-      `;
-    });
+    await sql`
+      INSERT INTO users (email, username, password_hash)
+      VALUES (${email}, ${username}, ${passwordHash})
+    `;
+    await sql`
+      UPDATE invites SET used = true WHERE token = ${token}
+    `;
   } catch (error) {
     if (error.code === '23505')
       throw { status: 400, message: 'Email eller användarnamn redan upptaget' };
