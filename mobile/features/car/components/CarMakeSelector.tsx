@@ -2,7 +2,7 @@ import React, { useState, useMemo } from "react";
 import {
   View,
   TextInput,
-  FlatList,
+  ScrollView,
   Text,
   TouchableOpacity,
   StyleSheet,
@@ -24,10 +24,10 @@ export default function CarMakeSelector({
   const [search, setSearch] = useState("");
 
   const filteredMakes = useMemo(() => {
-    if (!search) return makes;
-    return makes.filter((m) =>
-      m.Make_Name.toLowerCase().includes(search.toLowerCase()),
-    );
+    if (!search.trim()) return [];
+    return makes
+      .filter((m) => m.Make_Name.toLowerCase().includes(search.toLowerCase()))
+      .slice(0, 50);
   }, [makes, search]);
 
   return (
@@ -48,43 +48,65 @@ export default function CarMakeSelector({
         value={search}
         onChangeText={setSearch}
       />
-      <FlatList
-        data={filteredMakes}
-        keyExtractor={(item) => item.Make_ID.toString()}
-        renderItem={({ item }) => {
-          const isSelected = selected?.Make_ID === item.Make_ID;
-          return (
-            <TouchableOpacity
-              style={[
-                styles.item,
-                {
-                  borderBottomColor: isSelected
-                    ? "transparent"
-                    : colors.borderLight,
-                  backgroundColor: isSelected ? colors.primary : "transparent",
-                },
-              ]}
-              onPress={() => onSelect(item)}
-              activeOpacity={0.7}
-            >
-              <Text
-                style={{
-                  color: isSelected ? colors.background : colors.text,
-                  fontSize: fontSize.sm,
-                  fontWeight: isSelected ? fontWeight.bold : fontWeight.regular,
-                }}
-              >
-                {item.Make_Name}
+      {!search.trim() ? (
+        <View
+          style={[
+            styles.emptyState,
+            { borderColor: colors.border, borderRadius: radius.md, backgroundColor: colors.surface },
+          ]}
+        >
+          <Text style={{ color: colors.textMuted, fontSize: fontSize.sm }}>
+            Skriv för att söka bland bilmärken...
+          </Text>
+        </View>
+      ) : (
+        <ScrollView
+          style={[
+            styles.list,
+            { borderColor: colors.border, borderRadius: radius.md },
+          ]}
+          keyboardShouldPersistTaps="handled"
+          nestedScrollEnabled
+        >
+          {filteredMakes.length === 0 ? (
+            <View style={[styles.emptyState, { backgroundColor: colors.surface }]}>
+              <Text style={{ color: colors.textMuted, fontSize: fontSize.sm }}>
+                Inga träffar för "{search}"
               </Text>
-            </TouchableOpacity>
-          );
-        }}
-        style={[
-          styles.list,
-          { borderColor: colors.border, borderRadius: radius.md },
-        ]}
-        keyboardShouldPersistTaps="handled"
-      />
+            </View>
+          ) : (
+            filteredMakes.map((item) => {
+              const isSelected = selected?.Make_ID === item.Make_ID;
+              return (
+                <TouchableOpacity
+                  key={item.Make_ID.toString()}
+                  style={[
+                    styles.item,
+                    {
+                      borderBottomColor: isSelected
+                        ? "transparent"
+                        : colors.borderLight,
+                      backgroundColor: isSelected ? colors.primary : "transparent",
+                    },
+                  ]}
+                  onPress={() => onSelect(item)}
+                  activeOpacity={0.7}
+                >
+                  <Text
+                    style={{
+                      color: isSelected ? colors.background : colors.text,
+                      fontSize: fontSize.sm,
+                      fontWeight: isSelected ? fontWeight.bold : fontWeight.regular,
+                    }}
+                  >
+                    {item.Make_Name}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })
+          )}
+        </ScrollView>
+      )}
     </View>
   );
 }
@@ -98,4 +120,11 @@ const styles = StyleSheet.create({
   },
   list: { borderWidth: 1, maxHeight: 220 },
   item: { padding: 12, borderBottomWidth: 1 },
+  emptyState: {
+    borderWidth: 1,
+    padding: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 60,
+  },
 });

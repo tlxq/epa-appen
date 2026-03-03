@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { fetchMe, updateMe } from "../../profile/services/profileApi";
+import { fetchMakes } from "../services/carApi";
 
 type Car = { make: string; model: string } | null;
 
@@ -33,6 +34,9 @@ export const CarProvider = ({ children }: { children: React.ReactNode }) => {
       } catch {
         // Not logged in yet — ignore, car stays null
       }
+
+      // Pre-warm the NHTSA makes cache in the background so edit-car opens instantly
+      fetchMakes().catch(() => {});
     })();
   }, []);
 

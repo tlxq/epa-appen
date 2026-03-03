@@ -23,6 +23,7 @@ import {
   uploadAvatar,
   type ServerUser,
 } from "../services/profileApi";
+import { useCar } from "@/features/car/context/CarContext";
 import { useTheme } from "@/hooks/use-theme";
 
 type Props = { onSave?: (saved: ServerUser) => void };
@@ -30,6 +31,7 @@ type Props = { onSave?: (saved: ServerUser) => void };
 export default function ProfileForm({ onSave }: Props) {
   const { colors, spacing, radius, fontSize, fontWeight } = useTheme();
   const router = useRouter();
+  const { car } = useCar();
   const bioRef = useRef<TextInput>(null);
 
   const [me, setMe] = useState<ServerUser | null>(null);
@@ -297,14 +299,14 @@ export default function ProfileForm({ onSave }: Props) {
             <Text
               style={{
                 color:
-                  me.car_make || me.car_model ? colors.text : colors.textMuted,
+                  car?.make || car?.model ? colors.text : colors.textMuted,
                 fontSize: fontSize.md,
                 fontWeight: fontWeight.medium,
               }}
             >
-              {me.car_make && me.car_model
-                ? `${me.car_make} ${me.car_model}`
-                : me.car_make || me.car_model || "Lägg till din EPA-bil"}
+              {car?.make && car?.model
+                ? `${car.make} ${car.model}`
+                : car?.make || car?.model || "Lägg till din EPA-bil"}
             </Text>
           </View>
           <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />

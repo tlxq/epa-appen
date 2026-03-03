@@ -3,7 +3,7 @@ import {
   View,
   Text,
   TextInput,
-  FlatList,
+  ScrollView,
   TouchableOpacity,
   StyleSheet,
 } from "react-native";
@@ -49,18 +49,19 @@ export default function CarModelSelector({
           },
         ]}
       />
-      <FlatList
-        data={filteredModels}
-        keyExtractor={(item) => item.Model_ID.toString()}
+      <ScrollView
         style={[
           styles.list,
           { borderColor: colors.border, borderRadius: radius.md },
         ]}
         keyboardShouldPersistTaps="handled"
-        renderItem={({ item }) => {
+        nestedScrollEnabled
+      >
+        {filteredModels.map((item) => {
           const isSelected = item.Model_Name === selected;
           return (
             <TouchableOpacity
+              key={item.Model_ID.toString()}
               style={[
                 styles.item,
                 {
@@ -84,8 +85,8 @@ export default function CarModelSelector({
               </Text>
             </TouchableOpacity>
           );
-        }}
-      />
+        })}
+      </ScrollView>
     </View>
   );
 }
