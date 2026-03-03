@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react';
-import { fetchMakes, fetchModelsForMake } from '../services/carApi';
+import { useState, useCallback } from "react";
+import { fetchMakes, fetchModelsForMake } from "../services/carApi";
 
 export function useCars() {
   const [makes, setMakes] = useState<any[]>([]);

@@ -1,143 +1,92 @@
-import React, { useEffect, useLayoutEffect, useState } from 'react';
+import React, { useCallback } from "react";
 import {
   View,
   ScrollView,
   StyleSheet,
   Text,
-  Image,
   ActivityIndicator,
   TouchableOpacity,
   Alert,
-} from 'react-native';
-import { useRouter, useNavigation } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+  RefreshControl,
+} from "react-native";
+import { useRouter, useNavigation, useFocusEffect } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 
-import {
-  fetchMe,
-  type ServerUser,
-} from '../../../features/profile/services/profileServerApi';
+import { useProfile } from "../../../features/profile/hooks/useProfile";
+import ProfileCard from "../../../features/profile/components/ProfileCard";
+import { useTheme } from "@/hooks/use-theme";
 
 export default function ProfileTab() {
   const router = useRouter();
   const navigation = useNavigation();
+  const { profile, loading, error, reload } = useProfile();
+  const { colors } = useTheme();
 
-  const [profile, setProfile] = useState<ServerUser | null>(null);
-  const [loading, setLoading] = useState(true);
+  // Reload whenever the tab comes into focus (e.g. after editing)
+  useFocusEffect(
+    useCallback(() => {
+      reload();
+    }, [reload]),
+  );
 
-  const loadProfile = async () => {
-    try {
-      setLoading(true);
-      const me = await fetchMe();
-      setProfile(me);
-    } catch (e: any) {
-      Alert.alert('Fel', e.message);
-      router.replace('/(auth)/login');
-    } finally {
-      setLoading(false);
+  React.useLayoutEffect(() => {
+    if (error) {
+      Alert.alert("Fel", error);
+      router.replace("/(auth)/login");
     }
-  };
+  }, [error, router]);
 
-  useEffect(() => {
-    loadProfile();
-  }, []);
-
-  // Lägg kugghjul i header (proffsigt)
-  useLayoutEffect(() => {
+  React.useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => (
         <TouchableOpacity
-          onPress={() => router.push('../edit-profile')}
-          style={{ paddingHorizontal: 12 }}
+          onPress={() => router.push("../edit-profile")}
+          style={{ paddingHorizontal: 14 }}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
-          <Ionicons name="settings-outline" size={22} />
+          <Ionicons name="settings-outline" size={22} color={colors.icon} />
         </TouchableOpacity>
       ),
-      title: 'Profil',
+      title: "Profil",
     });
-  }, [navigation]);
+  }, [navigation, colors, router]);
 
   if (loading) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator />
-        <Text style={{ marginTop: 10 }}>Laddar profil...</Text>
+      <View style={[styles.center, { backgroundColor: colors.background }]}>
+        <ActivityIndicator color={colors.primary} size="large" />
       </View>
     );
   }
 
   if (!profile) {
     return (
-      <View style={styles.center}>
-        <Text>Kunde inte ladda profilen.</Text>
+      <View style={[styles.center, { backgroundColor: colors.background }]}>
+        <Text style={{ color: colors.textSecondary }}>
+          Kunde inte ladda profilen.
+        </Text>
       </View>
     );
   }
 
-  const displayName = profile.name?.trim() || profile.username;
-  const carText =
-    profile.car_make || profile.car_model
-      ? `${profile.car_make || ''} ${profile.car_model || ''}`.trim()
-      : null;
-
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <View style={styles.card}>
-        {profile.avatar_url ? (
-          <Image source={{ uri: profile.avatar_url }} style={styles.avatar} />
-        ) : (
-          <View style={styles.avatarPlaceholder}>
-            <Text style={styles.avatarText}>
-              {displayName?.[0]?.toUpperCase() || '?'}
-            </Text>
-          </View>
-        )}
-
-        <Text style={styles.name}>{displayName}</Text>
-        <Text style={styles.email}>{profile.email}</Text>
-
-        {profile.bio ? <Text style={styles.bio}>{profile.bio}</Text> : null}
-
-        <View style={styles.meta}>
-          <Text style={styles.metaRow}>Roll: {profile.role}</Text>
-          {carText ? <Text style={styles.metaRow}>Bil: {carText}</Text> : null}
-        </View>
-
-        <Text style={styles.hint}>
-          Tryck på kugghjulet för att redigera din profil.
-        </Text>
-      </View>
+    <ScrollView
+      style={{ backgroundColor: colors.background }}
+      contentContainerStyle={styles.container}
+      refreshControl={
+        <RefreshControl
+          refreshing={loading}
+          onRefresh={reload}
+          tintColor={colors.primary}
+        />
+      }
+    >
+      <ProfileCard user={profile} />
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  container: { padding: 20, backgroundColor: '#f5f5f5' },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 14,
-    padding: 18,
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 3,
-    alignItems: 'center',
-  },
-  avatar: { width: 92, height: 92, borderRadius: 46, marginBottom: 12 },
-  avatarPlaceholder: {
-    width: 92,
-    height: 92,
-    borderRadius: 46,
-    marginBottom: 12,
-    backgroundColor: '#bbb',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  avatarText: { color: '#fff', fontSize: 34, fontWeight: '800' },
-  name: { fontSize: 22, fontWeight: '800' },
-  email: { marginTop: 4, fontSize: 14, color: '#666' },
-  bio: { marginTop: 12, fontSize: 14, color: '#222', textAlign: 'center' },
-  meta: { marginTop: 14, width: '100%' },
-  metaRow: { fontSize: 13, color: '#555', marginTop: 4 },
-  hint: { marginTop: 16, fontSize: 12, color: '#777' },
+  center: { flex: 1, alignItems: "center", justifyContent: "center" },
+  container: { flexGrow: 1 },
 });

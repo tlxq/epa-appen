@@ -1,4 +1,4 @@
-const BASE = 'https://vpic.nhtsa.dot.gov/api/vehicles';
+const BASE = "https://vpic.nhtsa.dot.gov/api/vehicles";
 
 export const fetchMakes = async () => {
   const res = await fetch(`${BASE}/GetAllMakes?format=json`);

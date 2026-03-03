@@ -1,9 +1,11 @@
-import React, { useEffect, useState } from 'react';
-import { StyleSheet, View, ActivityIndicator, Text, Alert } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
-import * as Location from 'expo-location';
+import React, { useEffect, useState } from "react";
+import { StyleSheet, View, ActivityIndicator, Text, Alert } from "react-native";
+import MapView, { Marker } from "react-native-maps";
+import * as Location from "expo-location";
+import { useTheme } from "@/hooks/use-theme";
 
 export default function MapScreen() {
+  const { colors } = useTheme();
   const [location, setLocation] =
     useState<Location.LocationObjectCoords | null>(null);
   const [loading, setLoading] = useState(true);
@@ -11,8 +13,8 @@ export default function MapScreen() {
   useEffect(() => {
     (async () => {
       let { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Ingen GPS-access', 'Du måste tillåta platstjänster!');
+      if (status !== "granted") {
+        Alert.alert("Ingen GPS-access", "Du måste tillåta platstjänster!");
         setLoading(false);
         return;
       }
@@ -24,16 +26,16 @@ export default function MapScreen() {
 
   if (loading) {
     return (
-      <View style={styles.loader}>
-        <ActivityIndicator size="large" />
+      <View style={[styles.loader, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
 
   if (!location) {
     return (
-      <View style={styles.loader}>
-        <Text>Ingen platsdata...</Text>
+      <View style={[styles.loader, { backgroundColor: colors.background }]}>
+        <Text style={{ color: colors.textSecondary }}>Ingen platsdata...</Text>
       </View>
     );
   }
@@ -56,7 +58,7 @@ export default function MapScreen() {
             longitude: location.longitude,
           }}
           title="Du är här!"
-          pinColor="blue"
+          pinColor={colors.primary}
         />
       </MapView>
     </View>
@@ -65,6 +67,6 @@ export default function MapScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  map: { flex: 1, width: '100%', height: '100%' },
-  loader: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  map: { flex: 1, width: "100%", height: "100%" },
+  loader: { flex: 1, justifyContent: "center", alignItems: "center" },
 });

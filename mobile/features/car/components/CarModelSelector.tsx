@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo } from "react";
 import {
   View,
   Text,
@@ -6,7 +6,8 @@ import {
   FlatList,
   TouchableOpacity,
   StyleSheet,
-} from 'react-native';
+} from "react-native";
+import { useTheme } from "@/hooks/use-theme";
 
 type Model = { Model_ID: number; Model_Name: string };
 
@@ -19,7 +20,8 @@ export default function CarModelSelector({
   selected: string;
   onSelect: (model: string) => void;
 }) {
-  const [search, setSearch] = useState('');
+  const { colors, radius, fontSize, fontWeight } = useTheme();
+  const [search, setSearch] = useState("");
 
   const filteredModels = useMemo(
     () =>
@@ -31,52 +33,70 @@ export default function CarModelSelector({
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>Välj modell</Text>
       <TextInput
         placeholder="Sök modell..."
+        placeholderTextColor={colors.placeholder}
         value={search}
         onChangeText={setSearch}
-        style={styles.searchInput}
+        style={[
+          styles.searchInput,
+          {
+            borderColor: colors.border,
+            borderRadius: radius.md,
+            backgroundColor: colors.inputBackground,
+            color: colors.text,
+            fontSize: fontSize.md,
+          },
+        ]}
       />
       <FlatList
         data={filteredModels}
         keyExtractor={(item) => item.Model_ID.toString()}
-        style={{ maxHeight: 300 }}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            style={[
-              styles.item,
-              item.Model_Name === selected && styles.selectedItem,
-            ]}
-            onPress={() => onSelect(item.Model_Name)}
-          >
-            <Text
+        style={[
+          styles.list,
+          { borderColor: colors.border, borderRadius: radius.md },
+        ]}
+        keyboardShouldPersistTaps="handled"
+        renderItem={({ item }) => {
+          const isSelected = item.Model_Name === selected;
+          return (
+            <TouchableOpacity
               style={[
-                styles.itemText,
-                item.Model_Name === selected && styles.selectedText,
+                styles.item,
+                {
+                  borderBottomColor: isSelected
+                    ? "transparent"
+                    : colors.borderLight,
+                  backgroundColor: isSelected ? colors.primary : "transparent",
+                },
               ]}
+              onPress={() => onSelect(item.Model_Name)}
+              activeOpacity={0.7}
             >
-              {item.Model_Name}
-            </Text>
-          </TouchableOpacity>
-        )}
+              <Text
+                style={{
+                  fontSize: fontSize.sm,
+                  color: isSelected ? colors.background : colors.text,
+                  fontWeight: isSelected ? fontWeight.bold : fontWeight.regular,
+                }}
+              >
+                {item.Model_Name}
+              </Text>
+            </TouchableOpacity>
+          );
+        }}
       />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { marginBottom: 20 },
-  label: { fontSize: 16, fontWeight: '600', marginBottom: 8 },
+  container: { marginBottom: 16 },
   searchInput: {
     borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 6,
     padding: 10,
-    marginBottom: 8,
+    marginBottom: 6,
   },
-  item: { padding: 12, borderBottomWidth: 1, borderBottomColor: '#eee' },
-  selectedItem: { backgroundColor: '#2196f3' },
-  itemText: { fontSize: 16 },
-  selectedText: { color: '#fff', fontWeight: '700' },
+  list: { borderWidth: 1, maxHeight: 240 },
+  item: { padding: 12, borderBottomWidth: 1 },
 });

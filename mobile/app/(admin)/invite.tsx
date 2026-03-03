@@ -1,75 +1,126 @@
-import React, { useState } from 'react';
-import { View, Text, Button, StyleSheet, Alert, TextInput } from 'react-native';
-import { useRouter } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { useState } from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  TextInput,
+} from "react-native";
+import { useRouter } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useTheme } from "@/hooks/use-theme";
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://api.ttdevs.com';
+const API_URL = process.env.EXPO_PUBLIC_API_URL || "https://api.ttdevs.com";
 
 export default function InviteScreen() {
   const router = useRouter();
-  const [email, setEmail] = useState('');
+  const { colors, spacing, radius, fontSize, fontWeight } = useTheme();
+  const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleLogout = async () => {
-    await AsyncStorage.removeItem('jwt');
-    Alert.alert('Utloggad', 'Du är nu utloggad');
-    router.replace('/(auth)/login');
+    await AsyncStorage.removeItem("jwt");
+    Alert.alert("Utloggad", "Du är nu utloggad");
+    router.replace("/(auth)/login");
   };
 
   const handleInvite = async () => {
     if (!email) {
-      Alert.alert('Fel', 'Ange en email');
+      Alert.alert("Fel", "Ange en email");
       return;
     }
     setLoading(true);
     try {
-      const token = await AsyncStorage.getItem('jwt');
+      const token = await AsyncStorage.getItem("jwt");
       const res = await fetch(`${API_URL}/api/auth/invite`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          Authorization: 'Bearer ' + token,
+          "Content-Type": "application/json",
+          Authorization: "Bearer " + token,
         },
         body: JSON.stringify({ email }),
       });
       const data = await res.json();
       if (!res.ok) {
-        Alert.alert('Fel', data.error || 'Misslyckades att skicka invite');
+        Alert.alert("Fel", data.error || "Misslyckades att skicka invite");
         setLoading(false);
         return;
       }
       Alert.alert(
-        'Invite skickad',
-        `Inbjudan skickad till ${email}!\nLänk: ${data.inviteLink || ''}`,
+        "Invite skickad",
+        `Inbjudan skickad till ${email}!\nLänk: ${data.inviteLink || ""}`,
       );
-      setEmail('');
+      setEmail("");
     } catch (err) {
       console.error(err);
-      Alert.alert('Fel', 'Kunde inte skicka invite');
+      Alert.alert("Fel", "Kunde inte skicka invite");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.text}>Hantera inbjudningar</Text>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <Text
+        style={[
+          styles.text,
+          {
+            color: colors.text,
+            fontSize: fontSize.xl,
+            fontWeight: fontWeight.extrabold,
+          },
+        ]}
+      >
+        Hantera inbjudningar
+      </Text>
       <TextInput
         placeholder="Användarens email"
+        placeholderTextColor={colors.placeholder}
         value={email}
         onChangeText={setEmail}
         keyboardType="email-address"
-        style={styles.input}
+        style={[
+          styles.input,
+          {
+            borderColor: colors.border,
+            backgroundColor: colors.inputBackground,
+            color: colors.text,
+            borderRadius: radius.md,
+            marginBottom: spacing.md,
+          },
+        ]}
         editable={!loading}
         autoCapitalize="none"
       />
-      <Button
-        title={loading ? 'Skickar...' : 'Skicka Invite'}
+      <TouchableOpacity
+        style={[
+          styles.button,
+          {
+            backgroundColor: colors.primary,
+            borderRadius: radius.md,
+            marginBottom: spacing.sm,
+            opacity: loading ? 0.6 : 1,
+          },
+        ]}
         onPress={handleInvite}
         disabled={loading}
-      />
-      <View style={{ height: 16 }} />
-      <Button title="Logga ut" color="tomato" onPress={handleLogout} />
+      >
+        <Text style={{ color: colors.background, fontWeight: fontWeight.bold }}>
+          {loading ? "Skickar..." : "Skicka Invite"}
+        </Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={[
+          styles.button,
+          { backgroundColor: colors.error, borderRadius: radius.md },
+        ]}
+        onPress={handleLogout}
+      >
+        <Text style={{ color: "#fff", fontWeight: fontWeight.bold }}>
+          Logga ut
+        </Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -77,18 +128,21 @@ export default function InviteScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     padding: 20,
   },
-  text: { fontSize: 24, marginBottom: 20 },
+  text: { marginBottom: 20, textAlign: "center" },
   input: {
     borderWidth: 1,
-    borderColor: '#ccc',
-    padding: 10,
-    marginBottom: 15,
-    borderRadius: 5,
-    minWidth: 220,
-    textAlign: 'center',
+    padding: 12,
+    minWidth: 280,
+    textAlign: "center",
+  },
+  button: {
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    alignItems: "center",
+    minWidth: 180,
   },
 });

@@ -1,17 +1,35 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React from "react";
+import { View, Text, StyleSheet } from "react-native";
+import { useTheme } from "@/hooks/use-theme";
 
 type Props = {
-  make: string;
-  model: string;
+  make?: string | null;
+  model?: string | null;
 };
 
 export default function CarSummaryCard({ make, model }: Props) {
+  const { colors, radius, fontSize, fontWeight } = useTheme();
+  const carText = make || model ? `${make || ""} ${model || ""}`.trim() : null;
+
+  if (!carText) return null;
+
   return (
-    <View style={styles.card}>
-      <Text style={styles.title}>🚗 Din bil</Text>
-      <Text style={styles.car}>
-        {make} {model}
+    <View
+      style={[
+        styles.card,
+        { backgroundColor: colors.surface, borderRadius: radius.lg },
+      ]}
+    >
+      <Text
+        style={[
+          styles.title,
+          { color: colors.textSecondary, fontWeight: fontWeight.bold },
+        ]}
+      >
+        🚗 Din bil
+      </Text>
+      <Text style={[styles.car, { color: colors.text, fontSize: fontSize.lg }]}>
+        {carText}
       </Text>
     </View>
   );
@@ -19,20 +37,13 @@ export default function CarSummaryCard({ make, model }: Props) {
 
 const styles = StyleSheet.create({
   card: {
-    padding: 20,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
+    padding: 16,
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
     shadowRadius: 10,
     elevation: 3,
-    marginBottom: 20,
+    marginTop: 12,
   },
-  title: {
-    fontWeight: 'bold',
-    marginBottom: 6,
-  },
-  car: {
-    fontSize: 18,
-  },
+  title: { marginBottom: 4 },
+  car: { fontWeight: "600" },
 });

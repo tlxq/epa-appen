@@ -1,7 +1,7 @@
 import { Stack } from "expo-router";
 import { useTheme } from "@/hooks/use-theme";
 
-export default function UserLayout() {
+export default function AdminLayout() {
   const { colors } = useTheme();
   return (
     <Stack
@@ -10,21 +10,12 @@ export default function UserLayout() {
         headerTintColor: colors.text,
       }}
     >
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-
+      <Stack.Screen name="home" options={{ headerShown: false }} />
       <Stack.Screen
-        name="edit-profile"
+        name="invite"
         options={{
           presentation: "modal",
-          title: "Inställningar",
-        }}
-      />
-
-      <Stack.Screen
-        name="edit-car"
-        options={{
-          presentation: "modal",
-          title: "Byt bil",
+          title: "Skicka invite",
         }}
       />
     </Stack>

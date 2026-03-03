@@ -1,6 +1,6 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://api.ttdevs.com';
+const API_URL = process.env.EXPO_PUBLIC_API_URL || "https://api.ttdevs.com";
 
 export type ServerUser = {
   id: string;
@@ -17,8 +17,8 @@ export type ServerUser = {
 };
 
 async function getJwt() {
-  const jwt = await AsyncStorage.getItem('jwt');
-  if (!jwt) throw new Error('Inte inloggad (JWT saknas)');
+  const jwt = await AsyncStorage.getItem("jwt");
+  if (!jwt) throw new Error("Inte inloggad (JWT saknas)");
   return jwt;
 }
 
@@ -30,7 +30,7 @@ export async function fetchMe(): Promise<ServerUser> {
   });
 
   const data = await res.json();
-  if (!res.ok) throw new Error(data?.error || 'Kunde inte hämta profil');
+  if (!res.ok) throw new Error(data?.error || "Kunde inte hämta profil");
   return data.user;
 }
 
@@ -43,10 +43,10 @@ export async function updateMe(input: {
   const jwt = await getJwt();
 
   const res = await fetch(`${API_URL}/api/users/me`, {
-    method: 'PUT',
+    method: "PUT",
     headers: {
       Authorization: `Bearer ${jwt}`,
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
     body: JSON.stringify(input),
   });
@@ -54,21 +54,21 @@ export async function updateMe(input: {
   const data = await res.json();
   if (!res.ok)
     throw new Error(
-      data?.error || data?.details || 'Kunde inte uppdatera profil',
+      data?.error || data?.details || "Kunde inte uppdatera profil",
     );
   return data.user;
 }
 
 function guessFileTypeFromUri(uri: string) {
   const lower = uri.toLowerCase();
-  if (lower.endsWith('.png')) return { type: 'image/png', name: 'avatar.png' };
-  if (lower.endsWith('.webp'))
-    return { type: 'image/webp', name: 'avatar.webp' };
-  if (lower.endsWith('.heic'))
-    return { type: 'image/heic', name: 'avatar.heic' };
-  if (lower.endsWith('.heif'))
-    return { type: 'image/heif', name: 'avatar.heif' };
-  return { type: 'image/jpeg', name: 'avatar.jpg' };
+  if (lower.endsWith(".png")) return { type: "image/png", name: "avatar.png" };
+  if (lower.endsWith(".webp"))
+    return { type: "image/webp", name: "avatar.webp" };
+  if (lower.endsWith(".heic"))
+    return { type: "image/heic", name: "avatar.heic" };
+  if (lower.endsWith(".heif"))
+    return { type: "image/heif", name: "avatar.heif" };
+  return { type: "image/jpeg", name: "avatar.jpg" };
 }
 
 export async function uploadAvatar(uri: string) {
@@ -77,10 +77,10 @@ export async function uploadAvatar(uri: string) {
   const { type, name } = guessFileTypeFromUri(uri);
 
   const form = new FormData();
-  form.append('avatar', { uri, name, type } as any);
+  form.append("avatar", { uri, name, type } as any);
 
   const res = await fetch(`${API_URL}/api/users/me/avatar`, {
-    method: 'POST',
+    method: "POST",
     headers: { Authorization: `Bearer ${jwt}` },
     body: form,
   });

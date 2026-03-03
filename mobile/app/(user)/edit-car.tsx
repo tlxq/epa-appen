@@ -1,17 +1,9 @@
-import React from 'react';
-import CarForm from '../../features/car/components/CarForm';
-import { useRouter } from 'expo-router';
-import { Alert } from 'react-native';
+import React from "react";
+import CarForm from "../../features/car/components/CarForm";
+import { useRouter } from "expo-router";
 
 export default function EditCarScreenRoute() {
   const router = useRouter();
 
-  return (
-    <CarForm
-      onSave={() => {
-        Alert.alert('Sparat!', 'Din bil är sparad.');
-        router.back();
-      }}
-    />
-  );
+  return <CarForm onSave={() => router.back()} />;
 }
