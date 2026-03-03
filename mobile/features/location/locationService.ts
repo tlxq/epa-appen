@@ -29,32 +29,63 @@ TaskManager.defineTask(LOCATION_TASK, async ({ data, error }: any) => {
   }
 });
 
+export async function postCurrentLocation(): Promise<void> {
+  try {
+    const jwt = await AsyncStorage.getItem("jwt");
+    if (!jwt) return;
+    const loc = await Location.getCurrentPositionAsync({
+      accuracy: Location.Accuracy.Balanced,
+    });
+    await fetch(`${API_URL}/api/users/me/location`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${jwt}`,
+      },
+      body: JSON.stringify({
+        lat: loc.coords.latitude,
+        lng: loc.coords.longitude,
+      }),
+    });
+  } catch {
+    // silent
+  }
+}
+
 export async function startLocationSharing(): Promise<void> {
   const { status: fg } = await Location.requestForegroundPermissionsAsync();
   if (fg !== "granted") throw new Error("Platstillstånd nekades");
 
-  const { status: bg } = await Location.requestBackgroundPermissionsAsync();
-  if (bg !== "granted") throw new Error("Bakgrundsplatstillstånd nekades");
+  // Post current location immediately so user appears on map right away
+  await postCurrentLocation();
 
-  const isRunning = await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK).catch(() => false);
-  if (!isRunning) {
-    await Location.startLocationUpdatesAsync(LOCATION_TASK, {
-      accuracy: Location.Accuracy.Balanced,
-      timeInterval: 30_000,       // every 30 seconds
-      distanceInterval: 50,       // or every 50 metres
-      showsBackgroundLocationIndicator: true,
-      foregroundService: {
-        notificationTitle: "EPA Appen",
-        notificationBody: "Delar din position med andra EPA-förare",
-        notificationColor: "#F5C518",
-      },
-    });
+  // Try background task — silently skip if unavailable (Expo Go)
+  try {
+    const { status: bg } = await Location.requestBackgroundPermissionsAsync();
+    if (bg === "granted") {
+      const isRunning = await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK).catch(() => false);
+      if (!isRunning) {
+        await Location.startLocationUpdatesAsync(LOCATION_TASK, {
+          accuracy: Location.Accuracy.Balanced,
+          timeInterval: 30_000,
+          distanceInterval: 50,
+          showsBackgroundLocationIndicator: true,
+          foregroundService: {
+            notificationTitle: "EPA Appen",
+            notificationBody: "Delar din position med andra EPA-förare",
+            notificationColor: "#F5C518",
+          },
+        });
+      }
+    }
+  } catch {
+    // Background not available (Expo Go) — foreground-only sharing still works
   }
 }
 
 export async function stopLocationSharing(): Promise<void> {
   const isRunning = await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK).catch(() => false);
   if (isRunning) {
-    await Location.stopLocationUpdatesAsync(LOCATION_TASK);
+    await Location.stopLocationUpdatesAsync(LOCATION_TASK).catch(() => {});
   }
 }

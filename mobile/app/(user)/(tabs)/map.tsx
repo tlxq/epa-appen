@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useCallback } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   StyleSheet,
   View,
@@ -7,15 +7,15 @@ import {
   Alert,
   TouchableOpacity,
   Image,
-} from "react-native";
-import MapView, { Marker, Callout } from "react-native-maps";
+} from "react-native";import MapView, { Marker, Callout } from "react-native-maps";
 import * as Location from "expo-location";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useTheme } from "@/hooks/use-theme";
 import { fetchNearbyUsers } from "@/features/chat/chatApi";
+import { useLocationSharing } from "@/features/location/LocationContext";
+import { postCurrentLocation } from "@/features/location/locationService";
 
 const POLL_MS = 15_000;
 
@@ -24,35 +24,11 @@ type NearbyUser = Awaited<ReturnType<typeof fetchNearbyUsers>>[number];
 export default function MapScreen() {
   const { colors, fontSize, fontWeight, spacing, radius } = useTheme();
   const router = useRouter();
+  const { sharing } = useLocationSharing();
   const [location, setLocation] =
     useState<Location.LocationObjectCoords | null>(null);
   const [loading, setLoading] = useState(true);
   const [nearbyUsers, setNearbyUsers] = useState<NearbyUser[]>([]);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  const postLocation = useCallback(
-    async (coords: Location.LocationObjectCoords) => {
-      try {
-        const jwt = await AsyncStorage.getItem("jwt");
-        if (!jwt) return;
-        await fetch(
-          `${process.env.EXPO_PUBLIC_API_URL || "https://api.ttdevs.com"}/api/users/me/location`,
-          {
-            method: "PUT",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${jwt}`,
-            },
-            body: JSON.stringify({
-              lat: coords.latitude,
-              lng: coords.longitude,
-            }),
-          },
-        );
-      } catch {}
-    },
-    [],
-  );
 
   const loadNearby = useCallback(async () => {
     try {
@@ -78,23 +54,24 @@ export default function MapScreen() {
     })();
   }, []);
 
-  // Poll nearby users while map tab is focused
+  // Poll nearby users + keep own location fresh while map is focused
   useFocusEffect(
     useCallback(() => {
       loadNearby();
-      intervalRef.current = setInterval(loadNearby, POLL_MS);
-      return () => {
-        if (intervalRef.current) clearInterval(intervalRef.current);
-      };
-    }, [loadNearby]),
-  );
+      const nearbyInterval = setInterval(loadNearby, POLL_MS);
 
-  // Post own location when focused (if sharing is on, background task handles it;
-  // this keeps the pin fresh while the user has map open)
-  useFocusEffect(
-    useCallback(() => {
-      if (location) postLocation(location);
-    }, [location, postLocation]),
+      // Post own location every 30s if sharing (covers Expo Go — no background task)
+      let locationInterval: ReturnType<typeof setInterval> | null = null;
+      if (sharing) {
+        postCurrentLocation();
+        locationInterval = setInterval(postCurrentLocation, 30_000);
+      }
+
+      return () => {
+        clearInterval(nearbyInterval);
+        if (locationInterval) clearInterval(locationInterval);
+      };
+    }, [loadNearby, sharing]),
   );
 
   const openChat = (user: NearbyUser) => {

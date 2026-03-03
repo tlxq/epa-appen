@@ -14,6 +14,7 @@ export type ServerUser = {
   bio?: string | null;
   car_make?: string | null;
   car_model?: string | null;
+  location_sharing?: boolean;
 };
 
 async function getJwt() {

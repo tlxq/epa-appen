@@ -6,7 +6,7 @@ import React, {
   useCallback,
 } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { startLocationSharing, stopLocationSharing } from "./locationService";
+import { startLocationSharing, stopLocationSharing, postCurrentLocation } from "./locationService";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || "https://api.ttdevs.com";
 
@@ -41,7 +41,7 @@ export const LocationSharingProvider = ({
         });
         const { user } = await res.json();
         setSharing(!!user?.location_sharing);
-        // Restart background task if sharing was on
+        // Restart sharing if it was on — posts location immediately + restarts bg task
         if (user?.location_sharing) {
           await startLocationSharing().catch(() => {});
         }

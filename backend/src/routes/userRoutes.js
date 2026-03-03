@@ -27,7 +27,8 @@ userRoutes.get('/me', auth, async (req, res) => {
         name,
         bio,
         car_make,
-        car_model
+        car_model,
+        location_sharing
       FROM users
       WHERE id = ${userId}
     `;
