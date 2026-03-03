@@ -11,6 +11,7 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  Switch,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
@@ -24,6 +25,7 @@ import {
   type ServerUser,
 } from "../services/profileApi";
 import { useCar } from "@/features/car/context/CarContext";
+import { useLocationSharing } from "@/features/location/LocationContext";
 import { useTheme } from "@/hooks/use-theme";
 
 type Props = { onSave?: (saved: ServerUser) => void };
@@ -32,6 +34,7 @@ export default function ProfileForm({ onSave }: Props) {
   const { colors, spacing, radius, fontSize, fontWeight } = useTheme();
   const router = useRouter();
   const { car } = useCar();
+  const { sharing, toggling, toggleSharing } = useLocationSharing();
   const bioRef = useRef<TextInput>(null);
 
   const [me, setMe] = useState<ServerUser | null>(null);
@@ -311,6 +314,59 @@ export default function ProfileForm({ onSave }: Props) {
           </View>
           <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
         </TouchableOpacity>
+
+        {/* ── GPS DELNING ────────────────────────────── */}
+        <SectionLabel text="GPS DELNING" colors={colors} fontSize={fontSize} />
+        <View
+          style={[
+            styles.card,
+            styles.rowCard,
+            { backgroundColor: colors.surface, borderRadius: radius.lg },
+          ]}
+        >
+          <View style={{ flex: 1 }}>
+            <Text
+              style={{
+                color: colors.text,
+                fontSize: fontSize.md,
+                fontWeight: fontWeight.medium,
+              }}
+            >
+              Dela min position
+            </Text>
+            <Text
+              style={{
+                color: colors.textMuted,
+                fontSize: fontSize.xs,
+                marginTop: 2,
+              }}
+            >
+              {sharing
+                ? "Syns på kartan för andra EPA-förare"
+                : "Du är dold på kartan"}
+            </Text>
+          </View>
+          {toggling ? (
+            <ActivityIndicator color={colors.primary} />
+          ) : (
+            <Switch
+              value={sharing}
+              onValueChange={async () => {
+                try {
+                  await toggleSharing();
+                } catch (e: any) {
+                  Alert.alert("Fel", e.message);
+                }
+              }}
+              trackColor={{
+                false: colors.surfaceElevated,
+                true: colors.primary,
+              }}
+              thumbColor={colors.background}
+              ios_backgroundColor={colors.surfaceElevated}
+            />
+          )}
+        </View>
 
         {/* ── KONTO ──────────────────────────────────── */}
         <SectionLabel text="KONTO" colors={colors} fontSize={fontSize} />

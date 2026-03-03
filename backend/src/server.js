@@ -7,6 +7,8 @@ import { fileURLToPath } from 'node:url';
 import { testDBConnection } from './config/db.js';
 import { authRoutes } from './routes/authRoutes.js';
 import { userRoutes } from './routes/userRoutes.js';
+import { locationRoutes } from './routes/locationRoutes.js';
+import { chatRoutes } from './routes/chatRoutes.js';
 
 dotenv.config();
 
@@ -32,6 +34,8 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/users', locationRoutes);
+app.use('/api/chat', chatRoutes);
 
 app.get('/api/health', async (req, res) => {
   try {

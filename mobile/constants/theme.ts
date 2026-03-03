@@ -9,6 +9,7 @@ export const Palette = {
   offWhite: "#f0f4f8",
   error: "#ff4d4d",
   errorLight: "#cc0000",
+  success: "#4caf50",
 } as const;
 
 // ─── Semantic Color Tokens ─────────────────────────────────────────────────────
@@ -34,6 +35,7 @@ export const Colors = {
     tabIconSelected: Palette.schoolBusYellow,
     tabBarBackground: Palette.prussianBlue,
     error: Palette.error,
+    success: Palette.success,
   },
   light: {
     background: Palette.offWhite,
@@ -54,6 +56,7 @@ export const Colors = {
     tabIconSelected: Palette.regalNavy,
     tabBarBackground: Palette.white,
     error: Palette.errorLight,
+    success: Palette.success,
   },
 } as const;
 

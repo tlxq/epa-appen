@@ -28,6 +28,16 @@
     "plugins": [
       "expo-router",
       [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "EPA Appen vill dela din position med andra EPA-förare.",
+          "locationAlwaysPermission": "EPA Appen delar din position i bakgrunden.",
+          "locationWhenInUsePermission": "EPA Appen behöver din position för kartan.",
+          "isIosBackgroundLocationEnabled": true,
+          "isAndroidBackgroundLocationEnabled": true
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "image": "./assets/images/splash-icon.png",
